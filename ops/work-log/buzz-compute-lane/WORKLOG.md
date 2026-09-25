@@ -242,3 +242,8 @@ stay internal; nothing was filed).
 `desktop/src-tauri/src/managed_agents/readiness.rs`: harness `claude` is ready on a successful
 `claude auth status` probe (CLI login, :393/:438); harness Buzz Agent + provider `anthropic` requires
 `ANTHROPIC_API_KEY` (:506-511). Which account/credit pays is **not** determinable from source.
+
+## New VPS identity (founder, 2026-09-25)
+Founder: Astra migrated the skaists buzz box to **Hostinger** (hostinger.com VPS). Host/IP, OS, arch, plan and
+SSH user still unrecorded. Status: FOUNDER CLAIM, not observed. Access path: laptop session (WSL) SSH;
+this cloud container cannot reach it (outbound :22 blocked by environment network policy, no keys).
