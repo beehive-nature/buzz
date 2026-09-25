@@ -1,0 +1,192 @@
+From 69807f1ac8a5f067469db700fe0728c761f43fab Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 25 Sep 2026 02:55:14 +0000
+Subject: [PATCH] fix(buzz-agent): don't retry a backend's terminal 504 timeout
+
+A 504 whose OpenAI-shaped body carries error.code == "timeout" is the
+backend's own whole-request deadline: MeshLLM's openai-frontend cancels
+the completion after DEFAULT_BACKEND_TIMEOUT (300 s) and answers exactly
+this. post() treated it as a transient 5xx and resent the identical
+request, so one agent turn ran the same doomed completion MAX_RETRIES
+times (~15 min, ~3x compute) and still failed. Field report: cumulative
+872.6 s, 3 attempts.
+
+The typed 504 + code "timeout" is now terminal after the attempt that
+received it, and the error still carries the status and backend body.
+A 504 without that code (e.g. an intermediate proxy) and all other
+retryable statuses keep their existing retry behavior.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Md4tGms1w63Qy7V6i7EEq8
+Signed-off-by: Claude <noreply@anthropic.com>
+---
+ crates/buzz-agent/src/llm.rs | 132 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 132 insertions(+)
+
+diff --git a/crates/buzz-agent/src/llm.rs b/crates/buzz-agent/src/llm.rs
+index a963de1..647d344 100644
+--- a/crates/buzz-agent/src/llm.rs
++++ b/crates/buzz-agent/src/llm.rs
+@@ -1675,6 +1675,24 @@ fn is_retryable_transport_error(e: &reqwest::Error) -> bool {
+     e.is_timeout() || e.is_connect() || e.is_request()
+ }
+ 
++/// A `504` whose OpenAI-shaped body carries `error.code == "timeout"` is the
++/// backend's own whole-request deadline (MeshLLM's frontend cancels the
++/// completion and answers exactly this). Resending the same request replays
++/// the same doomed work, so it is terminal. A bare or non-JSON 504 from an
++/// intermediate proxy is not this signal and stays retryable.
++fn is_backend_timeout_504(status: reqwest::StatusCode, body: &str) -> bool {
++    status == reqwest::StatusCode::GATEWAY_TIMEOUT
++        && serde_json::from_str::<Value>(body)
++            .ok()
++            .and_then(|v| {
++                v.get("error")?
++                    .get("code")?
++                    .as_str()
++                    .map(|c| c == "timeout")
++            })
++            .unwrap_or(false)
++}
++
+ /// Which phase of an HTTP exchange produced a timeout error.
+ ///
+ /// Used by `timeout_message` to choose the right factual description.
+@@ -1903,6 +1921,13 @@ where
+         }
+         if status.is_server_error() || status == 429 || status.as_u16() == 499 {
+             let body = read_error_body(resp).await;
++            if is_backend_timeout_504(status, &body) {
++                return Err(PostError::Agent(terminal_llm_error(
++                    call_start.elapsed(),
++                    attempt + 1,
++                    &format!("backend timeout, not retried: {status}: {body}"),
++                )));
++            }
+             if attempt + 1 < MAX_RETRIES {
+                 tracing::warn!(
+                     attempt = attempt + 1,
+@@ -2720,6 +2745,7 @@ mod tests {
+                     500 => "Internal Server Error",
+                     502 => "Bad Gateway",
+                     503 => "Service Unavailable",
++                    504 => "Gateway Timeout",
+                     other => panic!("unsupported stub status: {other}"),
+                 };
+                 let body = response.body.to_string();
+@@ -2800,6 +2826,112 @@ mod tests {
+         assert!(requests.iter().all(|request| request.path != "/v1/models"));
+     }
+ 
++    /// MeshLLM v0.75.1's exact terminal-deadline body (openai-frontend
++    /// `OpenAiError::timeout`: 504, type `server_error`, code `timeout`).
++    fn mesh_backend_timeout() -> StubHttpResponse {
++        StubHttpResponse {
++            status: 504,
++            body: json!({
++                "error": {
++                    "message": "chat_completion timed out after 300000 ms",
++                    "type": "server_error",
++                    "param": null,
++                    "code": "timeout",
++                }
++            }),
++        }
++    }
++
++    fn post_count(requests: &[CapturedHttpRequest]) -> usize {
++        requests.iter().filter(|r| r.method == "POST").count()
++    }
++
++    /// Field failure 2026-09-24: the backend's own 300 s deadline was retried
++    /// as a transient 5xx, so one agent turn ran the same doomed completion
++    /// three times (~15 min, ~3x compute) and still failed. The deadline is
++    /// terminal: one attempt, and the caller still sees the backend's timeout.
++    #[tokio::test]
++    async fn backend_timeout_504_is_terminal_after_one_attempt() {
++        let (base_url, captured) = spawn_sequence_stub(vec![
++            mesh_backend_timeout(),
++            StubHttpResponse::ok(chat_response("must not be reached")),
++        ])
++        .await;
++        let mut config = cfg(Provider::OpenAi);
++        config.base_url = base_url;
++        let llm = Llm::new(&config).unwrap();
++
++        let error = complete_model(&llm, &config, "mesh").await.unwrap_err();
++        let msg = error.to_string();
++        assert_eq!(post_count(&captured.lock().await), 1, "no retry: {msg}");
++        assert!(msg.contains("504"), "status must stay observable: {msg}");
++        assert!(
++            msg.contains("chat_completion timed out after 300000 ms"),
++            "backend timeout must stay observable: {msg}"
++        );
++        assert!(msg.contains("1 attempt)"), "attempt count must be 1: {msg}");
++    }
++
++    /// Only the backend's typed deadline is terminal. A 504 without
++    /// `code: "timeout"` (e.g. an intermediate gateway) and ordinary 502/503
++    /// keep the existing transient-retry behavior.
++    #[tokio::test]
++    async fn other_5xx_including_untyped_504_are_still_retried() {
++        for first in [502u16, 503, 504] {
++            let (base_url, captured) = spawn_sequence_stub(vec![
++                StubHttpResponse::error(first, "transient"),
++                StubHttpResponse::ok(chat_response("recovered")),
++            ])
++            .await;
++            let mut config = cfg(Provider::OpenAi);
++            config.base_url = base_url;
++            let llm = Llm::new(&config).unwrap();
++
++            let response = complete_model(&llm, &config, "mesh").await.unwrap();
++            assert_eq!(response.text, "recovered", "status {first}");
++            assert_eq!(post_count(&captured.lock().await), 2, "status {first}");
++        }
++    }
++
++    /// A successful first attempt is untouched by the timeout classifier.
++    #[tokio::test]
++    async fn successful_request_is_one_attempt() {
++        let (base_url, captured) =
++            spawn_sequence_stub(vec![StubHttpResponse::ok(chat_response("ok"))]).await;
++        let mut config = cfg(Provider::OpenAi);
++        config.base_url = base_url;
++        let llm = Llm::new(&config).unwrap();
++
++        let response = complete_model(&llm, &config, "mesh").await.unwrap();
++        assert_eq!(response.text, "ok");
++        assert_eq!(post_count(&captured.lock().await), 1);
++    }
++
++    #[test]
++    fn backend_timeout_classifier_requires_504_and_typed_code() {
++        use reqwest::StatusCode;
++        let timeout = mesh_backend_timeout().body.to_string();
++        assert!(is_backend_timeout_504(
++            StatusCode::GATEWAY_TIMEOUT,
++            &timeout
++        ));
++        // same body on another status is not the deadline signal
++        assert!(!is_backend_timeout_504(
++            StatusCode::SERVICE_UNAVAILABLE,
++            &timeout
++        ));
++        // prose alone never matches; only the typed code does
++        assert!(!is_backend_timeout_504(
++            StatusCode::GATEWAY_TIMEOUT,
++            r#"{"error":{"message":"timed out","code":"service_unavailable"}}"#
++        ));
++        assert!(!is_backend_timeout_504(
++            StatusCode::GATEWAY_TIMEOUT,
++            "<html>504 Gateway Time-out</html>"
++        ));
++        assert!(!is_backend_timeout_504(StatusCode::GATEWAY_TIMEOUT, ""));
++    }
++
+     /// Whatever model the config names is what goes on the wire -- including
+     /// `auto`, which is a real provider model name for plain OpenAI hosts. A
+     /// caller routing through a mesh resolves its own name before spawning the
+-- 
+2.43.0
+
