@@ -251,3 +251,23 @@ this cloud container cannot reach it (outbound :22 blocked by environment networ
   `2.25.245.161`, status Running, **expiration 2026-10-24** (check auto-renew). Specs/OS/services: unobserved.
 - From this cloud container: TCP 22 blocked; HTTPS CONNECT refused by the egress proxy (403) → the environment
   network policy does not allow this host. Laptop session remains the access path.
+
+## Evidence 5 — Hostinger box live inventory (operator paste, hPanel web console, 2026-09-24 ~23:40 local)
+
+Class: LIVE via operator paste. Host prompt `root@buzz-hostinger` (srv2007286.hstgr.cloud, 2.25.245.161).
+- 8 vCPU; RAM 31 GiB (29 GiB free); disk `/dev/sda1` 394G, 17G used (5%); no GPU in lspci.
+- Running services (filtered): `docker.service` only. No x0x / mesh-llm / llama / meter systemd units.
+- Containers (all "Up 8 hours"): `buzz-prod-relay-1` `buzz-relay:skaists-088a677f` (healthy),
+  `buzz-prod-pair-relay-1` `ghcr.io/block/buzz:0.2.1`, `buzz-prod-caddy-1` `caddy:2-rl`,
+  `buzz-prod-minio-1` `buzz-storage:2025-09-07` (healthy), `buzz-prod-postgres-1` `postgres:17-alpine` (healthy),
+  `buzz-prod-redis-1` `redis:7-alpine` (healthy).
+- Listening: 0.0.0.0/[::] :22 sshd, :80/:443 docker-proxy (caddy); 127.0.0.1:3300 docker-proxy; resolved :53 local.
+- Binary/version loop for x0xd/x0x/mesh-llm/llama-server did not complete (paste error) — unverified.
+**Role: Buzz relay/coordinator host (buzz-prod stack). Not an inference node; Oracle's buzz-compute /
+buzz-meter services were not observed here.** Any serving here would be new deployment, not verification.
+
+SECURITY INCIDENT (same session): an SSH private key (ed25519, public fingerprint
+SHA256:Sqbroe8HmWfqFuZr/UFuQWjSaDmAVVAzCsCTK8cmlbM) was pasted into the root console and into the chat.
+Treat as compromised: founder instructed to remove it from root authorized_keys, scrub shell history,
+rotate to a new passphrase key, and revoke the old key wherever authorized (Oracle, GitHub, others).
+Key material is NOT recorded anywhere in this repo.
