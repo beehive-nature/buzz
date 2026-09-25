@@ -145,3 +145,22 @@ per attempt, billability is decided per job, and a retry never creates a second 
 Streaming conversion, model-routing changes, raising the 300 s timeout, meter implementation,
 x0x changes — all HOLD pending live evidence / C1. Authorized: buzz-agent fix 1 only
 (mesh-llm `504` + `error.code == "timeout"` → terminal after attempt 1).
+
+## Final state (ruled ACCEPTED / STOP, 2026-09-25)
+
+- C0 recovery packet: `d2f6da125981f3441e06070c50e0ccdf21c781fa`
+- Escrow commit (patch): `fdb1774dc8a1ae78a3dd467aad93a49e20f80380`
+- Source base: `skaists/buzz@e3a781b653f9031634ae905a5cfc5198e201683e`
+- Original local implementation commit: `69807f1ac8a5f067469db700fe0728c761f43fab`
+- Patch: `patches/0001-fix-buzz-agent-don-t-retry-a-backend-s-terminal-504-.patch`
+  sha256 `351f62921e240b368b586f141926b91d415ff57a05c8cc5e6478fc14d6094247`
+- buzz-agent 596/596 PASS; targeted timeout regression PASS; negative control (fix disabled) FAIL as
+  expected; fmt PASS; clippy `-D warnings` PASS. Full `just ci` not run (next owner).
+
+Next owner — fresh session sourced on `skaists/buzz`:
+1. verify patch sha256 and base `e3a781b`; 2. `git am` the exact patch; 3. confirm the diff matches
+(one file, `crates/buzz-agent/src/llm.rs`, +132/-0); 4. run repo-required CI (`just ci`);
+5. push + open the normal review path; 6. send to bFUzZ. Do not rewrite unless apply fails or review
+finds a defect.
+
+Gates: C1/C2 BLOCKED (live access). C3–C5 unopened. C6 source-level only. All HOLDs remain.
