@@ -247,3 +247,7 @@ stay internal; nothing was filed).
 Founder: Astra migrated the skaists buzz box to **Hostinger** (hostinger.com VPS). Host/IP, OS, arch, plan and
 SSH user still unrecorded. Status: FOUNDER CLAIM, not observed. Access path: laptop session (WSL) SSH;
 this cloud container cannot reach it (outbound :22 blocked by environment network policy, no keys).
+- Hostinger hPanel (founder screenshot 2026-09-24 23:30): `srv2007286.hstgr.cloud`, plan **KVM 8**, IPv4
+  `2.25.245.161`, status Running, **expiration 2026-10-24** (check auto-renew). Specs/OS/services: unobserved.
+- From this cloud container: TCP 22 blocked; HTTPS CONNECT refused by the egress proxy (403) → the environment
+  network policy does not allow this host. Laptop session remains the access path.
