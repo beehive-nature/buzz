@@ -271,3 +271,8 @@ SHA256:Sqbroe8HmWfqFuZr/UFuQWjSaDmAVVAzCsCTK8cmlbM) was pasted into the root con
 Treat as compromised: founder instructed to remove it from root authorized_keys, scrub shell history,
 rotate to a new passphrase key, and revoke the old key wherever authorized (Oracle, GitHub, others).
 Key material is NOT recorded anywhere in this repo.
+- buzz-hostinger OS (operator paste): **NixOS 26.05 (Yarara)**. sshd_config: `PermitRootLogin prohibit-password`,
+  `PasswordAuthentication no`, `PubkeyAuthentication yes` → root is key-only over SSH; the recovery password is
+  console-only. SSH/NixOS changes must go through the system config (`services.openssh.settings`), not /etc edits.
+  Open item: confirm the exposed key is absent from BOTH `~/.ssh/authorized_keys` and `/etc/ssh/authorized_keys.d/root`
+  (declarative keys); new key fingerprint SHA256:JMd61/bCSHiNe0umkjPiQogYK5XerINOYXPKZHr1kx8.
