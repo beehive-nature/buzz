@@ -186,3 +186,16 @@ omitted here). Taken while the "?" test turn was in flight.
 Inference (unverified): the agent turn is served locally on an iGPU with shared memory; the ~300 s
 timeouts are most plausibly prompt prefill of a large agent prompt on this device. Needs: prompt size
 (ACP event #42) and a post-turn status snapshot (avg_attempt_ms, completion_tokens_observed).
+
+## Evidence 3 — agent log + Share compute switch (operator paste, 2026-09-24 ~23:05 local, UTC-6)
+
+- Buzz desktop `v0.5.21`. Share compute: laptop switched to `unsloth/gemma-4-E4B-it-GGUF:Q4_K_M` (4.6 GB,
+  app-"Recommended" for Iris Xe / 32 GB AI memory); status `Starting…`; Max VRAM no limit.
+- buzz-acp start line (04:43:22Z): `agents=10`, `respond_to=anyone`, `permission_mode=bypassPermissions`,
+  `max_turn=7200s`, `idle_timeout=900s`, `subscribe=Mentions`, model still
+  `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_XL`, relay `wss://relay2.skaists.dev`. `discovered 0 channel(s)`
+  WARN at start (mentions still delivered). Stopped 05:07:26Z (model switch).
+- Last error: 503 `model 'unsloth/gemma-4-E4B-it-GGUF:Q4_K_M' is unavailable locally (loading or draining)`,
+  surfaced by Buzz as a "network path problem between this machine and the host" — **misleading copy**:
+  the cause is local model load, not the network. (Bug candidate, not in this lane's scope.)
+- Outcome of the 22:45 "?" test turn: not reported.
