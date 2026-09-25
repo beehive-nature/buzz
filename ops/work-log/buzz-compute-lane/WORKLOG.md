@@ -225,3 +225,20 @@ screenshot): e.g. "Buzz Architect · System …" (gpt-6-astra[high]), "Buzz Audi
 (claude-opus-5-5), "Buzz Build · Feature imp…" (gpt-6-sol[high]). So C1 includes this **agent roster**
 as well as any code diff. Founder ruling: **no bug reports to third parties for now** (drafted texts
 stay internal; nothing was filed).
+
+## CORRECTION — Oracle baseline (supersedes finding 4's model line)
+
+`ops/bmeshllm/README.md` later sections (beehive-nature @ b517ddec), RUNBOOK-CLAIM, not live:
+- 2026-09-16 ~02:30Z SWAP COMPLETE: llama.cpp rebuilt at tag b10991 → `/opt/buzz-compute/src/build-new/bin/llama-server`
+  0.4.1-dev @930e2fa; model `Qwen3.5-4B-UD-Q4_K_XL-MTP.gguf` via drop-in
+  `/etc/systemd/system/buzz-compute.service.d/bmeshllm.conf`; reasoning model (short max_tokens → empty
+  `content`; direct answers need `chat_template_kwargs.enable_thinking=false`).
+- 2026-09-16 ~03:10Z MTP PARKED: `--spec-type draft-mtp` removed after a generation-slot wedge; plain
+  decoding, `-fa on`, q8 KV, ~5.5 tok/s eval (CPU-contended smoke), stability 12/12.
+- So the last recorded state is Qwen3.5-4B, new binary, **no MTP** — not qwen2.5-3b. Verify flags from the
+  unit files (`systemctl cat buzz-compute`), not `pgrep` over ssh. Do not restore qwen2.5 or re-enable MTP.
+
+## Claude Code harness auth (REPO, skaists/buzz e3a781b)
+`desktop/src-tauri/src/managed_agents/readiness.rs`: harness `claude` is ready on a successful
+`claude auth status` probe (CLI login, :393/:438); harness Buzz Agent + provider `anthropic` requires
+`ANTHROPIC_API_KEY` (:506-511). Which account/credit pays is **not** determinable from source.
