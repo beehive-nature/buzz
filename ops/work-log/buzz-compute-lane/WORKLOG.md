@@ -199,3 +199,20 @@ timeouts are most plausibly prompt prefill of a large agent prompt on this devic
   surfaced by Buzz as a "network path problem between this machine and the host" — **misleading copy**:
   the cause is local model load, not the network. (Bug candidate, not in this lane's scope.)
 - Outcome of the 22:45 "?" test turn: not reported.
+
+## Evidence 4 — gemma-4-E4B load failure masked as "loading" (operator paste, 2026-09-24 ~23:15 local)
+
+LIVE via operator paste of `.runtime` from `:3131/api/status` after switching Share compute to
+`unsloth/gemma-4-E4B-it-GGUF:Q4_K_M`:
+`models: []`, `daemon_state: ready_idle`, `capabilities.local_serving: false`,
+`intent_summary.recent_errors: ["model inspection failed"]`.
+Agent turns meanwhile: `llm: (mesh) exhausted retries: 503 … model 'unsloth/gemma-4-E4B-it-GGUF:Q4_K_M' is
+unavailable locally (loading or draining)` in ~1.1–1.3 s, 3 attempts.
+
+Source (mesh-llm v0.75.1):
+- `runtime/startup_handles.rs:1204-1207` — `prepare_startup_local_model_task` returns None →
+  `record_startup_task_failure("model inspection failed")` and **returns; no retry**. Load is dead.
+- `network/openai/ingress.rs:473-481` — model known locally with no live candidate (comment: includes
+  *failed*) → 503 "unavailable locally (loading or draining)". A permanent failure is reported as transient.
+- Buzz UI then shows Share compute "Starting…" and relabels the 503 as a network-path problem.
+Root cause of the inspection failure itself: unknown (needs mesh-llm log line for that startup).
