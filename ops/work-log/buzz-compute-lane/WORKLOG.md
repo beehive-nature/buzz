@@ -276,3 +276,7 @@ Key material is NOT recorded anywhere in this repo.
   console-only. SSH/NixOS changes must go through the system config (`services.openssh.settings`), not /etc edits.
   Open item: confirm the exposed key is absent from BOTH `~/.ssh/authorized_keys` and `/etc/ssh/authorized_keys.d/root`
   (declarative keys); new key fingerprint SHA256:JMd61/bCSHiNe0umkjPiQogYK5XerINOYXPKZHr1kx8.
+- Incident containment on buzz-hostinger (operator paste): exposed key removed from root `~/.ssh/authorized_keys`
+  (count 0); not present in `/etc/ssh/authorized_keys.d/root` (0); new key SHA256:JMd61/bCSH…1kx8 added (1);
+  no key lines in `~/.bash_history` (0). Remaining: revoke the exposed key on Oracle, GitHub and anywhere else;
+  first laptop SSH login with the new key not yet confirmed.
