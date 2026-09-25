@@ -164,3 +164,25 @@ Next owner — fresh session sourced on `skaists/buzz`:
 finds a defect.
 
 Gates: C1/C2 BLOCKED (live access). C3–C5 unopened. C6 source-level only. All HOLDs remain.
+
+## Evidence 2 — laptop mesh-llm status (operator paste, 2026-09-24 ~22:47 local)
+
+Class: **LIVE via operator paste** of `curl.exe -s http://127.0.0.1:3131/api/status` (invite `token` field
+omitted here). Taken while the "?" test turn was in flight.
+
+- mesh-llm `0.75.1` (latest `0.76.2`); `release_attestation: missing`; owner verified, hostname `loVis`.
+- Node: `serving`, `is_host: true`, `is_client: false`, backend `skippy`, `llama_ready: true`.
+- Model: `unsloth/Qwen3.6-35B-A3B-MTP-GGUF@main:UD-Q4_K_XL`, `context_length: 131072`, instance port 59589.
+  Also available: `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_M`.
+- GPU: **Intel Iris Xe (integrated), `my_is_soc: true`, 34.0 GB "VRAM" = shared system memory.**
+- **`peers: []`** — the laptop's mesh has no other nodes. mesh `buzz-community-25c0…`,
+  `publication_state: private`, `nostr_discovery: false`. So no cross-machine path exists in this mesh now;
+  the VPSs are not peers of the laptop here.
+- `inflight_requests: 1`; `routing_metrics` all zero (request_count 0, completion_tokens 0,
+  attempt_timeout_count 0) → completed/failed/in-flight work is not reflected yet; the Settings
+  telemetry would show zero for the failing jobs.
+- `openai_guardrails.mode: disabled`.
+
+Inference (unverified): the agent turn is served locally on an iGPU with shared memory; the ~300 s
+timeouts are most plausibly prompt prefill of a large agent prompt on this device. Needs: prompt size
+(ACP event #42) and a post-turn status snapshot (avg_attempt_ms, completion_tokens_observed).
