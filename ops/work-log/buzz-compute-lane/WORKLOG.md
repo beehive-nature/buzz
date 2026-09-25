@@ -280,3 +280,14 @@ Key material is NOT recorded anywhere in this repo.
   (count 0); not present in `/etc/ssh/authorized_keys.d/root` (0); new key SHA256:JMd61/bCSH…1kx8 added (1);
   no key lines in `~/.bash_history` (0). Remaining: revoke the exposed key on Oracle, GitHub and anywhere else;
   first laptop SSH login with the new key not yet confirmed.
+
+## Evidence 6 — Claude Code running ON buzz-hostinger (operator relay of its read-only inventory, 2026-09-25)
+Access path now exists: founder started Claude Code in the Hostinger browser terminal (root, NixOS). Its
+read-only inventory (partial paste): no x0x / mesh-llm / llama / buzz-meter binaries anywhere on the system;
+only buzz binaries are inside the relay containers (Debian bookworm base):
+- buzz-relay (buzz-prod-relay-1) 66,422,936 B sha256 3161eb9a7d7db969373e1aa8f24d4138e4a68f77b3d9ed3fc010a03317c5384f
+- buzz-relay (buzz-prod-pair-relay-1) 48,536,328 B sha256 3459da307dc8960fa98bf232cca1ae189c6fe88467583f799934d253b9629504
+- buzz-admin (both) 8,389,000 B sha256 5a8311adefaa8642a791afd9152535a8d61f363741df375cd8d1d58e7df17be3
+- buzz-pair-relay (both) 2,809,584 B sha256 9db7e556cfbf1d431a89355daec21c3c5af67b5a9273e1f682c533bcb6c80471
+No --version flag; identity = image tags `buzz-relay:skaists-088a677f`, `ghcr.io/block/buzz:0.2.1`. Nothing modified.
+C2 status: Hostinger OBSERVED (relay/coordinator only). Oracle and laptop: pending.
