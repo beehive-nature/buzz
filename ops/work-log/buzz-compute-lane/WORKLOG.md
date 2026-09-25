@@ -216,3 +216,12 @@ Source (mesh-llm v0.75.1):
   *failed*) → 503 "unavailable locally (loading or draining)". A permanent failure is reported as transient.
 - Buzz UI then shows Share compute "Starting…" and relabels the 503 as a network-path problem.
 Root cause of the inspection failure itself: unknown (needs mesh-llm log line for that startup).
+
+## Astra context (founder, 2026-09-24 late)
+
+Founder: Astra was told to create ~12 agents, mostly in pairs; they were created but the work stopped
+unfinished (Astra likely ran out of work-token budget). Visible on the laptop Agents page (evidence
+screenshot): e.g. "Buzz Architect · System …" (gpt-6-astra[high]), "Buzz Audit · Code and s…"
+(claude-opus-5-5), "Buzz Build · Feature imp…" (gpt-6-sol[high]). So C1 includes this **agent roster**
+as well as any code diff. Founder ruling: **no bug reports to third parties for now** (drafted texts
+stay internal; nothing was filed).

@@ -37,6 +37,24 @@ Record: files touched, what Settings shows, where its numbers come from (which o
 `MeshServingUsage` / `buzz-meter` / new store). Only after the evidence dir is hashed may
 anyone modify that tree — and preferably on a new branch in a separate worktree.
 
+### 1b. Astra's agent roster (laptop, read-only, same evidence dir)
+
+Buzz desktop keeps agent state in its app-data dir (source: `desktop/src-tauri/src/event_sync.rs`):
+`personas.json`, `managed-agents.json`, `teams.json`, `retention.db`. These may hold key material:
+**copy + hash only, never paste contents into chat or logs.**
+
+```powershell
+$B = Get-ChildItem $env:APPDATA,$env:LOCALAPPDATA -Recurse -Depth 3 -Filter personas.json -ErrorAction SilentlyContinue |
+     Select -First 1 | % DirectoryName; $B
+foreach ($f in 'personas.json','managed-agents.json','teams.json','retention.db') {
+  if (Test-Path "$B\$f") { Copy-Item "$B\$f" "$E\roster-$f" } }
+# safe summary: names + models + provider only
+(Get-Content "$B\personas.json" -Raw | ConvertFrom-Json) | Select -ExpandProperty * -ErrorAction SilentlyContinue |
+  Select displayName, model, provider, sourceTeam -ErrorAction SilentlyContinue | Format-Table -Auto | Out-File "$E\roster-summary.txt"
+```
+Record which of the ~12 agents are complete (instructions, model, permissions, channel) vs stubs,
+and which pairs were intended. Do not edit or delete any agent during recovery.
+
 ## 2. C2 — inventory. Linux nodes (Oracle, new VPS)
 
 ```bash
